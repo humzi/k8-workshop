@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/humzi/k8-workshop.git
+    targetRevision: HEAD
+    path: .                      # manifests are at the repo root
+  destination:
+    server: https://kubernetes.default.svc   # the cluster ArgoCD itself runs in
+    namespace: default
+  syncPolicy:
+    automated:                   # this is the GitOps magic: auto-deploy on git change
+      prune: true                # delete resources removed from git
+      selfHeal: true             # revert manual kubectl drift back to git state

@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
       - name: demo-app
-        image: localhost:5001/demo-app:v1   # the exact tag the nodes now know how to pull
+        image: local-registry:5000/demo-app:1
         ports:
         - containerPort: 80
 ---
