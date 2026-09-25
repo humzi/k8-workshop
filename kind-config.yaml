@@ -1,0 +1,23 @@
+kind: Cluster                          # "I'm describing a kind Cluster resource"
+apiVersion: kind.x-k8s.io/v1alpha4     # kind's own config schema version — NOT a Kubernetes API version
+nodes:
+- role: control-plane                  # this container will run the API server, scheduler, etcd
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"   # tags this node so an Ingress controller knows
+                                             # it's allowed to bind to host ports 80/443 here —
+                                             # we need this in Module 2, setting it up now
+  extraPortMappings:                   # problem this solves: the control-plane node is really
+                                        # a Docker container — its port 80 isn't your laptop's
+                                        # port 80 unless you explicitly map it, same as `docker run -p`
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+- role: worker                         # plain worker node #1 — will run your application pods
+- role: worker                         # plain worker node #2 — pods get spread across these two

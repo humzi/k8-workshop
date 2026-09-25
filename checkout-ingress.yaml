@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: checkout-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /   # controller-specific config — Ingress
+                                                       # objects are deliberately generic, so
+                                                       # per-controller behavior lives in annotations
+                                                       # rather than the spec itself (a real wart
+                                                       # of the Ingress API, cleaned up by the newer
+                                                       # Gateway API — worth knowing that name exists)
+spec:
+  ingressClassName: nginx        # which Ingress controller should handle this — matters once
+                                    # you have more than one controller in a cluster (common in
+                                    # prod: an internal one + an internet-facing one)
+  rules:
+  - host: checkout.local          # virtual-hosting: routes based on the Host header, exactly
+                                    # like nginx/Apache server_name blocks. Multiple Ingress
+                                    # objects, one controller, one IP, many domains.
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: checkout-svc     # points at the Service, not the pods directly — Ingress
+            port:                   # never bypasses the Service abstraction
+              number: 80

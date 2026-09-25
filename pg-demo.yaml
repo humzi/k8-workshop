@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg-demo
+spec:
+  replicas: 1        # deliberately 1 — a shared ReadWriteOnce PVC can't be mounted read-write
+                        # by two pods at once. This is exactly why StatefulSets exist: an app
+                        # needing 3 replicas that each need their OWN storage uses a StatefulSet's
+                        # volumeClaimTemplates (one PVC generated per replica), not a Deployment.
+                        # We're keeping this to one replica to stay in Deployment territory today.
+  selector:
+    matchLabels:
+      app: pg-demo
+  template:
+    metadata:
+      labels:
+        app: pg-demo
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        env:
+        - name: POSTGRES_PASSWORD
+          value: "demo-password"   # plaintext env var — a real bad habit we'll fix with
+                                     # Secrets shortly. Flagging it now on purpose.
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests: { cpu: "100m", memory: "128Mi" }
+          limits: { cpu: "250m", memory: "256Mi" }
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: pg-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pg-demo
+spec:
+  selector:
+    app: pg-demo
+  ports:
+  - port: 5432
+    targetPort: 5432

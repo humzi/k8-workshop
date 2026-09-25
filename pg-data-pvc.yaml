@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pg-data
+spec:
+  accessModes:
+    - ReadWriteOnce       # one node at a time can mount this read-write. In production this
+                            # matters a lot: most cloud block storage (EBS, Persistent Disk,
+                            # Azure Disk) is ReadWriteOnce-only — it's exactly why a pod using
+                            # one "can't float" between nodes instantly; the volume has to
+                            # detach from the old node and reattach to the new one first.
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard   # in prod: gp3 / pd-ssd / managed-premium — a real CSI driver
+                                  # backed by real network-attached block storage

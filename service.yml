@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-web
+spec:
+  selector:
+    app: hello-web        # "route to any pod carrying this label" — this is the live link
+                            # to whatever the Deployment currently has running
+  ports:
+  - port: 80                # the Service's own virtual port
+    targetPort: 80          # the container port to actually forward to
+  type: ClusterIP           # only reachable from inside the cluster — that's deliberate for now

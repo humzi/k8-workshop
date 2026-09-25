@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-web
+  annotations:
+    kubernetes.io/change-cause: "Bump to 0.3-plain-text — demo rollout"
+  labels:
+    app: hello-web
+spec:
+  replicas: 3                    # desired state the ReplicaSet controller reconciles toward
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1     # at most 1 of the 3 desired pods may be down at any point during
+                            # the rollout — this is your capacity floor. Real prod tuning:
+                            # too aggressive (e.g. 50%) and a bad deploy tanks half your
+                            # capacity instantly; too conservative and deploys crawl.
+      maxSurge: 1            # at most 1 EXTRA pod (above the desired 3) may exist temporarily —
+                            # this is what lets Kubernetes bring up a new pod BEFORE tearing
+                            # down an old one, rather than strictly one-out-one-in.
+  minReadySeconds: 5         # a new pod must stay Ready for 5s before it's considered "available"
+                             # and the rollout is allowed to proceed to the next pod. In real
+                             # prod this is often 30-60s+ — it's your guard against a pod that
+                             # passes its readiness probe instantly but falls over moments later.  
+  selector:
+    matchLabels:
+      app: hello-web             # MUST match template.metadata.labels below — this is how
+                                 # the Deployment/ReplicaSet finds "its" pods. Immutable once
+                                 # created, precisely because changing it would orphan pods.
+  template:                      # the pod "stamp" used to create each replica
+    metadata:
+      labels:
+        app: hello-web
+    spec:
+      containers:
+      - name: hello-web
+        image: nginxdemos/hello:latest   # returns its own pod name/IP in the response —
+        ports:
+        - containerPort: 80
+        resources:
+          requests:               # what the SCHEDULER uses to pick a node — "guarantee this much"
+            cpu: "50m"
+            memory: "64Mi"
+          limits:                 # hard ceiling enforced by the kubelet/runtime
+            cpu: "100m"
+            memory: "128Mi"
+        readinessProbe:           # "can this pod receive traffic RIGHT NOW?"
+          httpGet:                # failing readiness = pulled out of the Service's endpoints,
+            path: /                # pod is NOT restarted — it's just taken off the LB
+            port: 80
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        livenessProbe:            # "is this container still alive, or hung?"
+          httpGet:                 # failing liveness = kubelet KILLS and restarts the container
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
